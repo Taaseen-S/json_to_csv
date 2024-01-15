@@ -1,0 +1,64 @@
+import ijson
+import json
+import csv
+
+def process_item(item):
+    # Basic user data
+    user_data = {
+        'login': item.get('login', ''),
+        'commits': item.get('commits', 0)
+    }
+
+    # Initialize an empty list to store rows
+    rows = []
+
+    # Check if 'repo_list' is present and is a list
+    if 'repo_list' in item and isinstance(item['repo_list'], list):
+        if not item['repo_list']:
+            # If 'repo_list' is empty, add a row with just the user data
+            rows.append([user_data['login'], '', '', '', '', '', '', user_data['commits']])
+        else:
+            # Process each repository in the 'repo_list'
+            for repo in item['repo_list']:
+                repo_data = [
+                    user_data['login'],
+                    repo.get('full_name', ''),
+                    repo.get('language', ''),
+                    repo.get('stargazers_count', 0),
+                    repo.get('forks_count', 0),
+                    repo.get('open_issues', 0),
+                    repo.get('fork', False),
+                    user_data['commits']
+                ]
+                rows.append(repo_data)
+    else:
+        # If 'repo_list' is not present or not a list, add a row with just the user data
+        rows.append([user_data['login'], '', '', '', '', '', '', user_data['commits']])
+
+    return rows
+def process_json_objects(file):
+    buffer = ''
+    for line in file:
+        buffer += line.strip()
+        try:
+            # Try to parse the buffered content as JSON
+            data = json.loads(buffer)
+            yield data
+            buffer = ''  # Reset buffer after successful parse
+        except json.JSONDecodeError:
+            # If JSON is incomplete, continue buffering
+            continue
+# Open the JSON file and a CSV file for writing
+with open('C:\\Users\\taase\\Downloads\\github_user_metric_archive.json', 'r', encoding='utf-8') as json_file, \
+     open('C:\\Data\\Github Output\\output.csv', 'w', newline='', encoding='utf-8') as csv_file:
+
+    # Create a CSV writer object
+    csv_writer = csv.writer(csv_file)
+    header = ['login', 'repo_names', 'programming_languages', 'stargazers_count', 'repo_forks_count', 'repo_open_issues_count', 'repo_forks', 'commits']
+    csv_writer.writerow(header)
+
+    # Iterate over each JSON object in the file
+    for item in process_json_objects(json_file):
+        for row in process_item(item):
+            csv_writer.writerow(row)
+
